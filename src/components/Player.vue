@@ -91,11 +91,6 @@ export default {
     Popover,
     Slider
   },
-  computed: {
-    filteredTrack () {
-      return this.tracks.filter((track, index) => this.currentTrackIndex === index)
-    }
-  },
   watch: {
     volume (val) {
       if (val) this.muted = false

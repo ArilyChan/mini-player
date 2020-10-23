@@ -137,6 +137,7 @@
     @track-favourite="trackToggleFavourite"
     @track-changed="switchTrack"
     v-if="this.tracks.length"
+    ref="player"
   />
   <!-- <a
     href="https://github.com/muhammederdem/mini-player"
@@ -191,7 +192,9 @@ export default {
         cover: song.background || `https://b.ppy.sh/thumb/${song.sid}l.jpg`,
         sid: song.sid,
         url: song.setLink,
-        source: song.fullMp3 || song.previewMp3
+        source: song.fullMp3 || song.previewMp3,
+        uuid: song.uuid,
+        uploader: song.uploader
       }
       this.insertIndexOffset += 1
       const insertIndex = this.currentIndex + this.insertIndexOffset
@@ -208,8 +211,56 @@ export default {
         placement: 'topRight'
       })
     },
-    switchTrack (track) {
-      this.currentIndex = track
+    broadcastMessage (user, message) {
+      n.open({
+        message,
+        description: `--${user.name}`
+      })
+    },
+    scheduleRemove (target) {
+      this.scheduledRemovingTracks.push(target)
+    },
+    removeTrack ({ uploader, uuid }) {
+      const targetIndex = this.tracks.findIndex(({ uuid: _uuid }) => uuid === _uuid)
+      const currentIndex = this.currentIndex
+      // const target = this.tracks[targetIndex]
+      if (targetIndex === -1) {
+        return n.open({
+          message: `unable to find the song with uuid ${uuid}`,
+          placement: 'topRight'
+        })
+      }
+      /** the only track is going to be delete. ok */
+      if (this.tracks.length === 1) return this.removeTrackForReal(targetIndex, `${uploader.nickname} required to remove this track ;^;`)
+      /** the track's index is lower than current playing track, remove directly will cause track cover to mismatch the song.
+       * need update the player data after the removal
+       */
+      if (targetIndex === currentIndex) this.$refs.player.nextTrack()
+      if (targetIndex <= currentIndex) return this.removeTrackIndexLessThanCurrentIndex(targetIndex, `${uploader.nickname} required to remove this track ;^;`)
+      /** the index of track to remove is higher than curret, remove directly */
+      this.removeTrackForReal(targetIndex, `${uploader.nickname} required to remove this track ;^;`)
+    },
+    removeTrackIndexLessThanCurrentIndex (index, reason) {
+      /** edge case:
+       * 2 track, current index = 1,
+       * removing track's index = 1,
+       *
+       * so nextTrack() will be called, but the next index will be 0 beacuse of the overflow.
+       * subtract 1 from 0 will be -1
+       */
+      if (this.$refs.player.currentTrackIndex > 0) this.$refs.player.currentTrackIndex -= 1
+      this.removeTrackForReal(index, reason)
+    },
+    removeTrackForReal (index, reason = undefined) {
+      const removedTrack = this.tracks.splice(index, 1)[0]
+      n.open({
+        message: `removed ${removedTrack.artist} - ${removedTrack.name}`,
+        description: reason,
+        placement: 'topRight'
+      })
+    },
+    switchTrack (trackIndex) {
+      this.currentIndex = trackIndex
       this.insertIndexOffset = 0
     }
   },
@@ -221,7 +272,8 @@ export default {
         path: '/Radio'
       }),
       currentIndex: 0,
-      insertIndexOffset: 0
+      insertIndexOffset: 0,
+      scheduledRemovingTracks: []
     }
   },
   mounted () {
@@ -229,6 +281,9 @@ export default {
       this.socketPushedTrack(song)
       this.pushTrack(song)
     })
+    this.socket.on('broadcast-message', (user, message) => this.broadcastMessage(user, message))
+    this.socket.on('remove-track', (track) => this.removeTrack(track))
+
     fetch('./history')
       .then(res => res.json())
       .then(songs => songs.map(song => this.pushTrack(song)))

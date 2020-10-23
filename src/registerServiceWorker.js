@@ -2,8 +2,8 @@
 
 import { register } from 'register-service-worker'
 
-import { registerRoute } from 'workbox-routing'
-import { NetworkFirst } from 'workbox-strategies'
+// import { registerRoute } from 'workbox-routing'
+// import { NetworkFirst } from 'workbox-strategies'
 
 if ('serviceWorker' in window.navigator) {
   register(`${process.env.BASE_URL}service-worker.js`, {
@@ -34,7 +34,7 @@ if ('serviceWorker' in window.navigator) {
   })
 }
 
-registerRoute(
-  ({ url }) => url.pathname.startsWith('/radio'),
-  new NetworkFirst()
-)
+// registerRoute(
+//   ({ url }) => url.pathname.startsWith('/radio'),
+//   new NetworkFirst()
+// )
