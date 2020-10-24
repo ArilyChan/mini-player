@@ -12,8 +12,8 @@
               v-for="(track, $index) in tracks"
               v-show="$index == currentTrackIndex"
               :key="$index"
-              v-swipeleft="() => nextTrack('slide-x-right')"
-              v-swiperight="() => prevTrack('slide-x-left')"
+              v-swipeleft="() => prevTrack('slide-x-left')"
+              v-swiperight="() => nextTrack('slide-x-right')"
             ></div>
           </transition-group>
       </div>
@@ -206,13 +206,13 @@ export default {
       this.audio.src = this.currentTrack.source
       setTimeout(() => {
         if (this.isTimerPlaying) {
+          this.mediaSessionSetMetadata()
           this.audio.play()
         } else {
           this.audio.pause()
         }
       }, 300)
       this.$emit('track-changed', this.currentTrackIndex)
-      this.mediaSessionSetMetadata()
     },
     favorite () {
       this.$emit('track-favourite', this.currentTrackIndex)
@@ -235,7 +235,7 @@ export default {
             { src: `https://b.ppy.sh/thumb/${this.currentTrack.sid}.jpg`, sizes: '80x60', type: 'image/png' },
             { src: `https://b.ppy.sh/thumb/${this.currentTrack.sid}l.jpg`, sizes: '160x120', type: 'image/png' },
             { src: this.currentTrack.cover }
-          ]
+          ].filter(({ src }) => src)
         })
       }
     },
