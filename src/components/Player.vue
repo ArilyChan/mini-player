@@ -12,8 +12,8 @@
               v-for="(track, $index) in tracks"
               v-show="$index == currentTrackIndex"
               :key="$index"
-              v-swipeleft="() => prevTrack('slide-x-left')"
-              v-swiperight="() => nextTrack('slide-x-right')"
+              v-swipeleft="() => prevTrack('slide-x-right')"
+              v-swiperight="() => nextTrack('slide-x-left')"
             ></div>
           </transition-group>
       </div>
