@@ -2,18 +2,20 @@
   <div class="player">
     <div class="player__top">
       <div class="player-cover">
-        <transition-group :name="transitionName">
-          <div
-            class="player-cover__item"
-            :style="{
-              backgroundImage: `url('${track.cover}')`,
-              backgroundSize: 'cover',
-            }"
-            v-for="(track, $index) in tracks"
-            v-show="$index == currentTrackIndex"
-            :key="$index"
-          ></div>
-        </transition-group>
+          <transition-group :name="transitionName">
+            <div
+              class="player-cover__item"
+              :style="{
+                backgroundImage: `url('${track.cover}')`,
+                backgroundSize: 'cover',
+              }"
+              v-for="(track, $index) in tracks"
+              v-show="$index == currentTrackIndex"
+              :key="$index"
+              v-swipeleft="() => nextTrack('slide-x-right')"
+              v-swiperight="() => prevTrack('slide-x-left')"
+            ></div>
+          </transition-group>
       </div>
       <div class="player-controls">
         <div
@@ -34,12 +36,12 @@
             <use xlink:href="#icon-link"></use>
           </svg>
         </a>
-        <div class="player-controls__item" @click="prevTrack">
+        <div class="player-controls__item" @click="() => prevTrack()">
           <svg class="icon">
             <use xlink:href="#icon-prev"></use>
           </svg>
         </div>
-        <div class="player-controls__item" @click="nextTrack">
+        <div class="player-controls__item" @click="() => nextTrack()">
           <svg class="icon">
             <use xlink:href="#icon-next"></use>
           </svg>
@@ -127,6 +129,8 @@ export default {
         this.audio.pause()
         this.isTimerPlaying = false
       }
+      // this.mediaSessionSetMetadata()
+      // this.mediaSessionSetPosition()
     },
     generateTime () {
       const width = (100 / this.audio.duration) * this.audio.currentTime
@@ -155,7 +159,7 @@ export default {
       const progress = this.$refs.progress
       const maxduration = this.audio.duration
       const position = x - progress.offsetLeft
-      console.log(progress.offsetLeft, progress.offsetWidth, x)
+
       let percentage = (100 * position) / progress.offsetWidth
       if (percentage > 100) {
         percentage = 100
@@ -173,8 +177,8 @@ export default {
       this.audio.pause()
       this.updateBar(e.pageX)
     },
-    prevTrack () {
-      this.transitionName = 'scale-in'
+    prevTrack (overrideTransaction = 'scale-in') {
+      this.transitionName = overrideTransaction
       this.isShowCover = false
       if (this.currentTrackIndex > 0) {
         this.currentTrackIndex--
@@ -184,8 +188,8 @@ export default {
       this.currentTrack = this.tracks[this.currentTrackIndex]
       this.resetPlayer()
     },
-    nextTrack () {
-      this.transitionName = 'scale-out'
+    nextTrack (overrideTransaction = 'scale-out') {
+      this.transitionName = overrideTransaction
       this.isShowCover = false
       if (this.currentTrackIndex < this.tracks.length - 1) {
         this.currentTrackIndex++
@@ -230,9 +234,14 @@ export default {
           artwork: [
             { src: `https://b.ppy.sh/thumb/${this.currentTrack.sid}.jpg`, sizes: '80x60', type: 'image/png' },
             { src: `https://b.ppy.sh/thumb/${this.currentTrack.sid}l.jpg`, sizes: '160x120', type: 'image/png' },
-            { src: this.currentTrack.cover, type: 'image/png' }
+            { src: this.currentTrack.cover }
           ]
         })
+      }
+    },
+    mediaSessionSetPosition () {
+      if ('mediaSession' in navigator && 'mediaSessionSetPositionState' in navigator.mediaSession) {
+        navigator.mediaSession.mediaSessionSetPositionState(this.audio)
       }
     }
   },
@@ -263,15 +272,26 @@ export default {
       document.head.appendChild(link)
     }
 
-    this.mediaSessionSetMetadata()
     if ('mediaSession' in navigator) {
-      navigator.mediaSession.setActionHandler('play', function () { vm.play() })
-      navigator.mediaSession.setActionHandler('pause', function () { vm.play() })
+      navigator.mediaSession.setActionHandler('play', function () {
+        vm.play()
+      })
+      navigator.mediaSession.setActionHandler('pause', function () {
+        vm.play()
+      })
       // navigator.mediaSession.setActionHandler('seekbackward', function () {})
       // navigator.mediaSession.setActionHandler('seekforward', function () {})
-      navigator.mediaSession.setActionHandler('previoustrack', function () { vm.prevTrack() })
-      navigator.mediaSession.setActionHandler('nexttrack', function () { vm.nextTrack() })
+      navigator.mediaSession.setActionHandler('seekto', (detail) => {
+        this.audio.currentTime = detail.seekTime
+      })
+      navigator.mediaSession.setActionHandler('previoustrack', function () {
+        vm.prevTrack()
+      })
+      navigator.mediaSession.setActionHandler('nexttrack', function () {
+        vm.nextTrack()
+      })
     }
+    this.mediaSessionSetMetadata()
   }
 }
 </script>

@@ -1,0 +1,77 @@
+//scale out
+
+.scale-out-enter-active {
+  transition: all 0.35s ease-in-out;
+}
+.scale-out-leave-active {
+  transition: all 0.35s ease-in-out;
+}
+.scale-out-enter-from {
+  transform: scale(0.55);
+  pointer-events: none;
+  opacity: 0;
+}
+.scale-out-leave-to {
+  transform: scale(1.2);
+  pointer-events: none;
+  opacity: 0;
+}
+
+//scale in
+
+.scale-in-enter-active {
+  transition: all 0.35s ease-in-out;
+}
+.scale-in-leave-active {
+  transition: all 0.35s ease-in-out;
+}
+.scale-in-enter-from {
+  transform: scale(1.2);
+  pointer-events: none;
+  opacity: 0;
+}
+.scale-in-leave-to {
+  transform: scale(0.55);
+  pointer-events: none;
+  opacity: 0;
+}
+
+// slide x left
+
+.slide-x-left-enter-active {
+  transition: all 0.35s ease-in-out;
+}
+.slide-x-left-leave-active {
+  transition: all 0.35s ease-in-out;
+}
+.slide-x-left-enter-from {
+  transform: translateX(1em) rotate(2deg);
+  pointer-events: none;
+  opacity: 0;
+}
+.slide-x-left-leave-to {
+  transform: translateX(-10em) rotate(-5deg);
+  // filter: blur(5px);
+  pointer-events: none;
+  opacity: 0;
+}
+
+// slide x right
+
+.slide-x-right-enter-active {
+  transition: all 0.35s ease-in-out;
+}
+.slide-x-right-leave-active {
+  transition: all 0.35s ease-in-out;
+}
+.slide-x-right-enter-from {
+  transform: translateX(-1em) rotate(-2deg);
+  pointer-events: none;
+  opacity: 0;
+}
+.slide-x-right-leave-to {
+  transform: translateX(10em) rotate(5deg);
+  // filter: blur(5px);
+  pointer-events: none;
+  opacity: 0;
+}

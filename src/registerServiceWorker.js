@@ -1,11 +1,12 @@
 /* eslint-disable no-console */
 
 import { register } from 'register-service-worker'
+import n from 'ant-design-vue/es/notification'
 
 // import { registerRoute } from 'workbox-routing'
 // import { NetworkFirst } from 'workbox-strategies'
 
-if ('serviceWorker' in window.navigator) {
+if ('serviceWorker' in window.navigator && process.env.NODE_ENV === 'production') {
   register(`${process.env.BASE_URL}service-worker.js`, {
     ready () {
       console.log(
@@ -20,10 +21,16 @@ if ('serviceWorker' in window.navigator) {
       console.log('Content has been cached for offline use.')
     },
     updatefound () {
-      console.log('New content is downloading.')
+      // console.log('New content is downloading.')
+      n.open({
+        message: 'new version found. updating...'
+      })
     },
     updated () {
-      console.log('New content is available; please refresh.')
+      // console.log('New content is available; please refresh.')
+      n.open({
+        message: 'update successed, please restart arilychan radio'
+      })
     },
     offline () {
       console.log('No internet connection found. App is running in offline mode.')

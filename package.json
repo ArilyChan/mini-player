@@ -10,8 +10,10 @@
   "dependencies": {
     "ant-design-vue": "^2.0.0-beta.10",
     "core-js": "^3.6.5",
+    "event-emitter": "^0.3.5",
     "register-service-worker": "^1.7.1",
     "socket.io-client": "^2.3.1",
+    "socketio-shared-webworker": "github:ArilyChan/socketio-shared-webworker",
     "vue": "^3.0.0"
   },
   "devDependencies": {

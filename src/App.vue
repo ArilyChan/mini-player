@@ -136,16 +136,10 @@
     :tracks="tracks"
     @track-favourite="trackToggleFavourite"
     @track-changed="switchTrack"
+    @popover-event="logEvent"
     v-if="this.tracks.length"
     ref="player"
   />
-  <!-- <a
-    href="https://github.com/muhammederdem/mini-player"
-    target="_blank"
-    class="github-btn"
-  >
-    See on GitHub
-  </a> -->
   <!-- <div target="_blank" class="github-btn">
     <input v-model="keyword" class="mr-2" style="color: black" />
     <a @click="debugPushedData(keyword)"
@@ -158,12 +152,15 @@
 import io from 'socket.io-client'
 import Player from './components/Player.vue'
 import n from 'ant-design-vue/es/notification'
-
+const socketUrl = process.env.NODE_ENV !== 'production' ? 'https://bot.ri.mk' : '/'
 export default {
   components: {
     Player
   },
   methods: {
+    logEvent (e) {
+      n.open(e)
+    },
     trackToggleFavourite (index) {
       this.tracks[index].favorited = !this.tracks[index].favorited
     },
@@ -265,12 +262,34 @@ export default {
     }
   },
   data () {
+    let socket
+    try {
+      const ee = require('event-emitter')
+      const work = new Worker('workers/webworker-socket.io.js')
+      const emitter = ee()
+      const parentApi = {
+        emit: (...args) => emitter.emit(...args)
+      }
+      work.onmessage = function (event) {
+        var data = event.data
+        console.log(data)
+        if (!data.parentJob) return
+        parentApi[data.parentJob](...data.args)
+      }
+      const workerJob = (action, ...args) => work.postMessage({ action, args })
+      workerJob('connect', socketUrl, { path: '/Radio' })
+      workerJob('on', 'broadcast-message')
+      workerJob('on', 'search-result')
+      workerJob('on', 'remove-track')
+      socket = emitter
+    } catch (error) {
+      console.log(error, 'fallback to socketio in main thread')
+      socket = io(socketUrl, { path: '/Radio' })
+    }
     return {
       keyword: '',
       tracks: [],
-      socket: io('/', {
-        path: '/Radio'
-      }),
+      socket,
       currentIndex: 0,
       insertIndexOffset: 0,
       scheduledRemovingTracks: []
@@ -648,41 +667,5 @@ body {
   }
 }
 
-//scale out
-
-.scale-out-enter-active {
-  transition: all 0.35s ease-in-out;
-}
-.scale-out-leave-active {
-  transition: all 0.35s ease-in-out;
-}
-.scale-out-enter-from {
-  transform: scale(0.55);
-  pointer-events: none;
-  opacity: 0;
-}
-.scale-out-leave-to {
-  transform: scale(1.2);
-  pointer-events: none;
-  opacity: 0;
-}
-
-//scale in
-
-.scale-in-enter-active {
-  transition: all 0.35s ease-in-out;
-}
-.scale-in-leave-active {
-  transition: all 0.35s ease-in-out;
-}
-.scale-in-enter-from {
-  transform: scale(1.2);
-  pointer-events: none;
-  opacity: 0;
-}
-.scale-in-leave-to {
-  transform: scale(0.55);
-  pointer-events: none;
-  opacity: 0;
-}
+@import "assets/transactions"
 </style>
