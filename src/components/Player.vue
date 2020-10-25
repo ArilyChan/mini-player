@@ -2,8 +2,8 @@
   <div class="player">
     <div class="player__top">
       <div class="player-cover">
-          <transition-group :name="transitionName">
-            <div
+        <transition-group :name="transitionName">
+          <!-- <div
               class="player-cover__item"
               :style="{
                 backgroundImage: `url('${track.cover}')`,
@@ -14,8 +14,20 @@
               :key="$index"
               v-swipeleft="() => prevTrack('slide-x-right')"
               v-swiperight="() => nextTrack('slide-x-left')"
-            ></div>
-          </transition-group>
+            ></div> -->
+          <lazy-background-image
+            v-for="(track, $index) in covers"
+            :key="track.cover || $index"
+            :image-source="track.cover"
+            loading-image="./img/arilychan.jpg"
+            error-image="./img/arilychan.jpg"
+            image-class="player-cover__item"
+            background-size="cover"
+            v-show="track.cover === currentTrack.cover"
+            v-swipeleft="() => prevTrack('slide-x-right')"
+            v-swiperight="() => nextTrack('slide-x-left')"
+          />
+        </transition-group>
       </div>
       <div class="player-controls">
         <div
@@ -70,8 +82,8 @@
     <div class="playing" ref="progress">
       <div class="playing__top">
         <div class="album-info" v-if="currentTrack">
-          <div class="album-info__name">{{ currentTrack.artist }}</div>
-          <div class="album-info__track">{{ currentTrack.name }}</div>
+          <div class="album-info__name">{{ currentTrack.name }}</div>
+          <div class="album-info__track">{{ currentTrack.artist }}</div>
         </div>
         <div class="playing__duration">{{ duration }}</div>
       </div>
@@ -80,18 +92,26 @@
       </div>
       <div class="playing__time">{{ currentTime }}</div>
     </div>
-    <div v-cloak></div>
   </div>
 </template>
 
 <script>
 import Popover from 'ant-design-vue/lib/popover'
 import Slider from 'ant-design-vue/lib/slider'
+import VueLazyBackgroundImage from './VueLazyBackgroundImage'
+// const VueLazyBackgroundImage = require('./vue-lazy-background-images')
 
 export default {
+  computed: {
+    covers () {
+      return this.tracks.map((track, index) => ({ cover: track.cover, index }))
+    }
+  },
   components: {
     Popover,
-    Slider
+    Slider,
+    // eslint-disable-next-line vue/no-unused-components
+    LazyBackgroundImage: VueLazyBackgroundImage
   },
   watch: {
     volume (val) {
@@ -110,7 +130,7 @@ export default {
       currentTrack: null,
       currentTrackIndex: 0,
       transitionName: null,
-      volume: 20,
+      volume: 50,
       muted: false
     }
   },
@@ -225,6 +245,13 @@ export default {
     changeVolume (vol) {
       this.volume = vol
     },
+    onPlaybackError () {
+      this.$emit('popover-event', {
+        message: '404, skip this track',
+        description: `${this.currentTrack.artist ? `${this.currentTrack.artist} - ` : ''} ${this.currentTrack.name}`
+      })
+      this.nextTrack()
+    },
     mediaSessionSetMetadata () {
       if ('mediaSession' in navigator) {
         /* eslint-disable-next-line */
@@ -261,16 +288,19 @@ export default {
       vm.nextTrack()
       this.isTimerPlaying = true
     }
+    this.audio.onerror = (err) => {
+      this.onPlaybackError(err)
+    }
 
     // this is optional (for preload covers)
-    for (let index = 0; index < this.tracks.length; index++) {
-      const element = this.tracks[index]
-      const link = document.createElement('link')
-      link.rel = 'prefetch'
-      link.href = element.cover
-      link.as = 'image'
-      document.head.appendChild(link)
-    }
+    // for (let index = 0; index < this.tracks.length; index++) {
+    //   const element = this.tracks[index]
+    //   const link = document.createElement('link')
+    //   link.rel = 'prefetch'
+    //   link.href = element.cover
+    //   link.as = 'image'
+    //   document.head.appendChild(link)
+    // }
 
     if ('mediaSession' in navigator) {
       navigator.mediaSession.setActionHandler('play', function () {

@@ -152,7 +152,9 @@
 import io from 'socket.io-client'
 import Player from './components/Player.vue'
 import n from 'ant-design-vue/es/notification'
-const socketUrl = process.env.NODE_ENV !== 'production' ? 'https://bot.ri.mk' : '/'
+import EE from 'eventemitter3'
+const socketUrl = process.env.NODE_ENV === 'development' ? 'https://bot.ri.mk' : '/'
+const historyUrl = process.env.NODE_ENV === 'development' ? 'https://bot.ri.mk/radio/history' : './history'
 export default {
   components: {
     Player
@@ -195,7 +197,12 @@ export default {
       }
       this.insertIndexOffset += 1
       const insertIndex = this.currentIndex + this.insertIndexOffset
-      if (insertIndex < this.tracks.length) this.tracks.push(song)
+      // if (process.env.NODE_ENV !== 'production') console.log({
+      //   insertIndex,
+      //   currentIndex: this.currentIndex,
+      //   playlistLength: this.tracks.length
+      // })
+      if (insertIndex >= this.tracks.length) this.tracks.push(track)
       else this.tracks.splice(insertIndex, 0, track)
     },
     socketPushedTrack (song) {
@@ -213,9 +220,6 @@ export default {
         message,
         description: `--${user.name}`
       })
-    },
-    scheduleRemove (target) {
-      this.scheduledRemovingTracks.push(target)
     },
     removeTrack ({ uploader, uuid }) {
       const targetIndex = this.tracks.findIndex(({ uuid: _uuid }) => uuid === _uuid)
@@ -259,20 +263,22 @@ export default {
     switchTrack (trackIndex) {
       this.currentIndex = trackIndex
       this.insertIndexOffset = 0
+      // if (process.env.NODE_ENV !== 'production') console.log({
+      //   currentIndex: trackIndex,
+      //   insertIndexOffset: this.insertIndexOffset
+      // })
     }
   },
   data () {
     let socket
     try {
-      const ee = require('event-emitter')
       const work = new Worker('workers/webworker-socket.io.js')
-      const emitter = ee()
+      const emitter = new EE()
       const parentApi = {
         emit: (...args) => emitter.emit(...args)
       }
       work.onmessage = function (event) {
         var data = event.data
-        console.log(data)
         if (!data.parentJob) return
         parentApi[data.parentJob](...data.args)
       }
@@ -303,7 +309,7 @@ export default {
     this.socket.on('broadcast-message', (user, message) => this.broadcastMessage(user, message))
     this.socket.on('remove-track', (track) => this.removeTrack(track))
 
-    fetch('./history')
+    fetch(historyUrl)
       .then(res => res.json())
       .then(songs => songs.map(song => this.pushTrack(song)))
   }

@@ -23,7 +23,6 @@ app.directive('swipeleft', {
 })
 app.directive('swiperight', {
   beforeMount: function (el, binding) {
-    console.log('binded')
     new VueTouch(el, binding, 'swiperight')
   }
 })
