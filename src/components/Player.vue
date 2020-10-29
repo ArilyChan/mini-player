@@ -23,7 +23,7 @@
             error-image="./img/arilychan.jpg"
             image-class="player-cover__item"
             background-size="cover"
-            v-show="track.cover === currentTrack.cover"
+            v-show="track.index === currentTrackIndex && track.cover == currentTrack.cover"
             v-swipeleft="() => prevTrack('slide-x-right')"
             v-swiperight="() => nextTrack('slide-x-left')"
           />
@@ -96,8 +96,8 @@
 </template>
 
 <script>
-import Popover from 'ant-design-vue/lib/popover'
-import Slider from 'ant-design-vue/lib/slider'
+import Popover from 'ant-design-vue/es/popover'
+import Slider from 'ant-design-vue/es/slider'
 import VueLazyBackgroundImage from './VueLazyBackgroundImage'
 // const VueLazyBackgroundImage = require('./vue-lazy-background-images')
 
@@ -105,6 +105,9 @@ export default {
   computed: {
     covers () {
       return this.tracks.map((track, index) => ({ cover: track.cover, index }))
+    },
+    currentTrack () {
+      return this.tracks[this.currentTrackIndex]
     }
   },
   components: {
@@ -127,7 +130,7 @@ export default {
       duration: null,
       currentTime: null,
       isTimerPlaying: false,
-      currentTrack: null,
+      // currentTrack: null,
       currentTrackIndex: 0,
       transitionName: null,
       volume: 50,
@@ -153,6 +156,12 @@ export default {
       // this.mediaSessionSetPosition()
     },
     generateTime () {
+      if (isNaN(this.audio.duration)) {
+        this.barWidth = this.circleLeft = '0%'
+        this.duration = 'Loading...'
+        this.currentTime = '00:00'
+        return
+      }
       const width = (100 / this.audio.duration) * this.audio.currentTime
       this.barWidth = width + '%'
       this.circleLeft = width + '%'
@@ -205,7 +214,7 @@ export default {
       } else {
         this.currentTrackIndex = this.tracks.length - 1
       }
-      this.currentTrack = this.tracks[this.currentTrackIndex]
+      // this.currentTrack = this.tracks[this.currentTrackIndex]
       this.resetPlayer()
     },
     nextTrack (overrideTransaction = 'scale-out') {
@@ -216,7 +225,7 @@ export default {
       } else {
         this.currentTrackIndex = 0
       }
-      this.currentTrack = this.tracks[this.currentTrackIndex]
+      // this.currentTrack = this.tracks[this.currentTrackIndex]
       this.resetPlayer()
     },
     resetPlayer () {
@@ -224,9 +233,9 @@ export default {
       this.circleLeft = 0
       this.audio.currentTime = 0
       this.audio.src = this.currentTrack.source
+      this.mediaSessionSetMetadata()
       setTimeout(() => {
         if (this.isTimerPlaying) {
-          this.mediaSessionSetMetadata()
           this.audio.play()
         } else {
           this.audio.pause()
@@ -253,11 +262,13 @@ export default {
       this.nextTrack()
     },
     mediaSessionSetMetadata () {
+      if (!this.currentTrack) return
+      if (!this.currentTrack.sid) return
       if ('mediaSession' in navigator) {
         /* eslint-disable-next-line */
         navigator.mediaSession.metadata = new MediaMetadata({
-          title: this.currentTrack.name,
-          artist: this.currentTrack.artist,
+          title: this.currentTrack.name || 'Unknown',
+          artist: this.currentTrack.artist || 'Unknown',
           artwork: [
             { src: `https://b.ppy.sh/thumb/${this.currentTrack.sid}.jpg`, sizes: '80x60', type: 'image/png' },
             { src: `https://b.ppy.sh/thumb/${this.currentTrack.sid}l.jpg`, sizes: '160x120', type: 'image/png' },
@@ -274,7 +285,7 @@ export default {
   },
   created () {
     const vm = this
-    this.currentTrack = this.tracks[0]
+    // this.currentTrack = this.tracks[0]
     this.audio = new Audio()
     this.audio.src = this.currentTrack.source
     this.audio.volume = this.volume / 100
@@ -282,11 +293,12 @@ export default {
       vm.generateTime()
     }
     this.audio.onloadedmetadata = function () {
+      vm.mediaSessionSetMetadata()
       vm.generateTime()
     }
     this.audio.onended = function () {
       vm.nextTrack()
-      this.isTimerPlaying = true
+      vm.isTimerPlaying = true
     }
     this.audio.onerror = (err) => {
       this.onPlaybackError(err)
@@ -321,7 +333,7 @@ export default {
         vm.nextTrack()
       })
     }
-    this.mediaSessionSetMetadata()
+    // this.mediaSessionSetMetadata()
   }
 }
 </script>

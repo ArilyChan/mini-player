@@ -63,14 +63,14 @@ export default {
       // return ''
       let url
       switch (this.imageState) {
-        case 'loading':
-          url = this.loadingImage
+        case 'loaded':
+          url = this.asyncImage.src
           break
         case 'error':
           url = this.errorImage
           break
         default:
-          url = this.asyncImage.src
+          url = this.loadingImage
           break
       }
       return {

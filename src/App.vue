@@ -149,9 +149,11 @@
 </template>
 
 <script>
+// eslint-disable-next-line no-unused-vars
 import io from 'socket.io-client'
 import Player from './components/Player.vue'
 import n from 'ant-design-vue/es/notification'
+import { Button } from 'ant-design-vue/es'
 import EE from 'eventemitter3'
 const socketUrl = process.env.NODE_ENV === 'development' ? 'https://bot.ri.mk' : '/'
 const historyUrl = process.env.NODE_ENV === 'development' ? 'https://bot.ri.mk/radio/history' : './history'
@@ -162,6 +164,9 @@ export default {
   methods: {
     logEvent (e) {
       n.open(e)
+    },
+    isSameTrack (a, b) {
+      return a.sid === b.sid
     },
     trackToggleFavourite (index) {
       this.tracks[index].favorited = !this.tracks[index].favorited
@@ -215,10 +220,15 @@ export default {
         placement: 'topRight'
       })
     },
-    broadcastMessage (user, message) {
+    notificationNeedConfirm (message, description, duration = 5, btn = (n, key) => (<Button size="small" type="primary" onClick={() => n.close(key)}>ok</Button>)) {
+      const key = `open${Date.now()}`
+      btn = btn(n, key)
       n.open({
         message,
-        description: `--${user.name}`
+        description,
+        key,
+        btn,
+        duration
       })
     },
     removeTrack ({ uploader, uuid }) {
@@ -231,9 +241,10 @@ export default {
           placement: 'topRight'
         })
       }
-      /** the only track is going to be delete. ok */
+      /** the only track is going to be deleted. ok */
       if (this.tracks.length === 1) return this.removeTrackForReal(targetIndex, `${uploader.nickname} required to remove this track ;^;`)
-      /** the track's index is lower than current playing track, remove directly will cause track cover to mismatch the song.
+      /**
+       * the track's index is lower than current playing track, remove directly will cause track cover to mismatch the song.
        * need update the player data after the removal
        */
       if (targetIndex === currentIndex) this.$refs.player.nextTrack()
@@ -306,13 +317,14 @@ export default {
       this.socketPushedTrack(song)
       this.pushTrack(song)
     })
-    this.socket.on('broadcast-message', (user, message) => this.broadcastMessage(user, message))
+    this.socket.on('broadcast-message', (sender, message) => this.notificationNeedConfirm(message, `${sender.name}`, sender.duration || 30, (n, key) => (<Button size="small" type="primary" onClick={() => n.close(key)}>ok</Button>)))
     this.socket.on('remove-track', (track) => this.removeTrack(track))
 
     fetch(historyUrl)
       .then(res => res.json())
       .then(songs => songs.map(song => this.pushTrack(song)))
   }
+
 }
 
 </script>
@@ -574,6 +586,7 @@ body {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
+    flex-grow: 1
   }
 
   &__duration {
@@ -608,7 +621,8 @@ body {
 .album-info {
   color: #71829e;
   flex: 1;
-  padding-right: 60px;
+  align-items: center;
+  padding-right: 35px;
   user-select: none;
 
   @media screen and (max-width: 576px), (max-height: 500px) {
@@ -673,5 +687,5 @@ body {
   }
 }
 
-@import "assets/transactions"
+@import "assets/transactions";
 </style>
